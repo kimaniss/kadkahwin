@@ -192,24 +192,65 @@ input:focus-visible, select:focus-visible {
   color: var(--muted);
 }
 
-.cover-photo {
-  width: 112px;
-  height: 112px;
-  border-radius: 50%;
-  margin: 22px 0 18px;
+.cover-photos {
   display: grid;
-  place-items: center;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: min(100%, 270px);
+  margin: 22px 0 18px;
+}
+
+.cover-photo {
+  aspect-ratio: 3 / 4;
+  min-width: 0;
   border: 1px solid var(--gold);
-  background: linear-gradient(135deg, #e9e0ce, #d7e0d2);
-  color: var(--green);
-  font: 2.8rem 'Cormorant Garamond', serif;
+  padding: 4px;
+  background: var(--white);
   overflow: hidden;
 }
 
 .cover-photo img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.cover-photo-label {
+  margin-top: 5px;
+  font-size: .62rem;
+  color: var(--muted);
+  letter-spacing: .04em;
+}
+
+.couple-photo {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  margin: 0 auto 18px;
+  padding: 4px;
+  border: 1px solid var(--gold);
+  background: var(--white);
+  overflow: hidden;
+}
+
+.couple-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 120px;
+  padding: 12px;
+  background: linear-gradient(135deg, #eee8da, #d7e0d2);
+  color: var(--green);
+  font-size: .72rem;
+  line-height: 1.5;
 }
 
 .cover-message {
@@ -601,7 +642,7 @@ footer {
   .cover-card { min-height: 600px; padding: 30px 17px; }
   .section { padding: 60px 0; }
   .couple-grid { gap: 10px; }
-  .couple-card { padding: 24px 8px; }
+  .couple-card { padding: 14px 8px; }
   .event-card { padding: 23px 15px; }
   .info-box strong { font-size: .78rem; }
 }
@@ -626,8 +667,21 @@ footer {
 
     <p class="cover-subtitle">Jemputan Majlis Perkahwinan</p>
 
-    <div class="cover-photo" id="coverPhoto" aria-label="Inisial pasangan">
-      A <span style="font-size:1.4rem">&</span> S
+    <div class="cover-photos" aria-label="Gambar pengantin">
+      <div>
+        <div class="cover-photo" id="coverGroomPhoto">
+          <img src="" alt="Gambar pengantin lelaki" id="coverGroomImg" hidden>
+          <div class="photo-placeholder" id="coverGroomPlaceholder">Masukkan gambar<br>pengantin lelaki</div>
+        </div>
+        <div class="cover-photo-label">Pengantin Lelaki</div>
+      </div>
+      <div>
+        <div class="cover-photo" id="coverBridePhoto">
+          <img src="" alt="Gambar pengantin perempuan" id="coverBrideImg" hidden>
+          <div class="photo-placeholder" id="coverBridePlaceholder">Masukkan gambar<br>pengantin perempuan</div>
+        </div>
+        <div class="cover-photo-label">Pengantin Perempuan</div>
+      </div>
     </div>
 
     <h1 class="cover-title" id="coverNames">Aiman</h1>
@@ -704,7 +758,10 @@ footer {
 
     <div class="couple-grid">
       <article class="couple-card">
-        <div class="couple-symbol" id="groomInitial">A</div>
+        <div class="couple-photo">
+          <img id="groomPhoto" src="" alt="Gambar pengantin lelaki" hidden>
+          <div class="photo-placeholder" id="groomPhotoPlaceholder">Ruang gambar<br>pengantin lelaki</div>
+        </div>
         <h3 id="groomName">Aiman</h3>
         <p>Pengantin Lelaki</p>
         <p id="groomParents" style="margin-top:12px">
@@ -713,7 +770,10 @@ footer {
       </article>
 
       <article class="couple-card">
-        <div class="couple-symbol" id="brideInitial">S</div>
+        <div class="couple-photo">
+          <img id="bridePhoto" src="" alt="Gambar pengantin perempuan" hidden>
+          <div class="photo-placeholder" id="bridePhotoPlaceholder">Ruang gambar<br>pengantin perempuan</div>
+        </div>
         <h3 id="brideName">Sofea</h3>
         <p>Pengantin Perempuan</p>
         <p id="brideParents" style="margin-top:12px">
@@ -944,9 +1004,11 @@ const CONFIG = {
   // Biarkan kosong jika tidak mahu butang WhatsApp.
   whatsapp: "60173933469",
 
-  // Pilihan: URL gambar pasangan.
-  // Biarkan kosong jika belum ada gambar.
-  photoUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQddOAa9ME9BVhoMXabGexhBl6xfzWhSG1ZO8dtQ4o5ciQuG77dDmhkNSdp&s=10",
+  // URL gambar berasingan untuk setiap pengantin.
+  // Gunakan pautan imej terus yang boleh dibuka secara umum.
+  // Biarkan "" jika gambar belum tersedia.
+  groomPhotoUrl: "",
+  bridePhotoUrl: "",
 
   // Pilihan: pautan fail audio MP3.
   // Biarkan kosong jika tidak mahu muzik.
@@ -1013,6 +1075,30 @@ function showStatus(message, type = "info", retry = false) {
    3. PAPAR MAKLUMAT PENGANTIN
    ========================================================== */
 
+function setPhoto(imageId, placeholderId, url, altText) {
+  const img = $(imageId);
+  const placeholder = $(placeholderId);
+  const imageUrl = String(url || "").trim();
+
+  if (!imageUrl) {
+    img.hidden = true;
+    placeholder.hidden = false;
+    return;
+  }
+
+  img.alt = altText;
+  img.onload = () => {
+    img.hidden = false;
+    placeholder.hidden = true;
+  };
+  img.onerror = () => {
+    img.hidden = true;
+    placeholder.hidden = false;
+    placeholder.textContent = "Gambar tidak dapat dipaparkan. Semak pautan gambar.";
+  };
+  img.src = imageUrl;
+}
+
 function initialiseInvitation() {
   const groom = CONFIG.groom.trim() || "Pengantin Lelaki";
   const bride = CONFIG.bride.trim() || "Pengantin Perempuan";
@@ -1029,9 +1115,6 @@ function initialiseInvitation() {
   $("brideName").textContent = bride;
   $("navNames").textContent = names;
   $("closingNames").textContent = names;
-
-  $("groomInitial").textContent = groom.charAt(0).toUpperCase();
-  $("brideInitial").textContent = bride.charAt(0).toUpperCase();
 
   $("groomParents").textContent = CONFIG.groomParents;
   $("brideParents").textContent = CONFIG.brideParents;
@@ -1075,22 +1158,16 @@ function initialiseInvitation() {
     "https://www.waze.com/ul?q=" +
     encodeURIComponent(CONFIG.mapQuery) + "&navigate=yes";
 
-  if (CONFIG.photoUrl.trim()) {
-    const img = document.createElement("img");
-    img.src = CONFIG.photoUrl;
-    img.alt = `Gambar ${names}`;
-    img.loading = "eager";
-    img.onerror = () => {
-      $("coverPhoto").textContent =
-        groom.charAt(0) + " & " + bride.charAt(0);
-    };
-
-    $("coverPhoto").textContent = "";
-    $("coverPhoto").appendChild(img);
-  } else {
-    $("coverPhoto").textContent =
-      groom.charAt(0) + " & " + bride.charAt(0);
-  }
+  // Paparkan gambar pengantin secara individu pada muka depan
+  // dan bahagian Pasangan Mempelai.
+  setPhoto("coverGroomImg", "coverGroomPlaceholder", CONFIG.groomPhotoUrl,
+    "Gambar pengantin lelaki");
+  setPhoto("groomPhoto", "groomPhotoPlaceholder", CONFIG.groomPhotoUrl,
+    "Gambar pengantin lelaki");
+  setPhoto("coverBrideImg", "coverBridePlaceholder", CONFIG.bridePhotoUrl,
+    "Gambar pengantin perempuan");
+  setPhoto("bridePhoto", "bridePhotoPlaceholder", CONFIG.bridePhotoUrl,
+    "Gambar pengantin perempuan");
 
   const waButton = $("whatsappBtn");
 
