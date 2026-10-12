@@ -848,9 +848,6 @@ footer {
            target="_blank" rel="noopener noreferrer">
           ↗ Waze
         </a>
-        <button type="button" class="btn btn-outline" id="calendarBtn">
-          + Simpan Tarikh
-        </button>
       </div>
     </div>
   </section>
@@ -1182,9 +1179,6 @@ function initialiseInvitation() {
   } else {
     waButton.href = "#rsvp";
   }
-
-  // Simpan tarikh ke kalendar.
-  $("calendarBtn").addEventListener("click", downloadCalendar);
 
   // Kiraan detik.
   updateCountdown();
